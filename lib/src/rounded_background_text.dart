@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
@@ -444,7 +445,7 @@ class __RoundedBackgroundTextState extends State<_RoundedBackgroundText> {
                         outerFactor: widget.outerFactor,
                       ),
                       child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+                        filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
                         child: CustomPaint(
                           isComplex: true,
                           willChange: true,
@@ -464,21 +465,6 @@ class __RoundedBackgroundTextState extends State<_RoundedBackgroundText> {
                     ),
                   )
                   .toList(),
-            ),
-            CustomPaint(
-              isComplex: true,
-              willChange: true,
-              size: Size(
-                size.maxWidth,
-                requiredSize.height,
-              ),
-              painter: _HighlightPainter(
-                lineInfos: lineInfos,
-                backgroundColor: widget.backgroundColor.withOpacity(0.1),
-                text: painter,
-                innerFactor: widget.innerFactor,
-                outerFactor: widget.outerFactor,
-              ),
             ),
           ],
         ),
@@ -590,6 +576,30 @@ class _HighlightPainter extends CustomPainter {
     required double outerRadius,
     required double innerRadius,
   }) {
+    // Adjust widths before starting
+    List<LineMetricsHelper> previouslyAdjusted = List.empty(growable: true);
+    for (int i = 0; i < lineInfos.length - 1; i++) {
+      final curr = lineInfos[i];
+      final next = lineInfos[i + 1];
+      previouslyAdjusted.add(curr);
+      previouslyAdjusted.add(next);
+      difference() {
+        return (curr.fullWidth - next.fullWidth).abs();
+      }
+
+      if (difference() < 20) {
+        final minStart = min(curr.x, next.x);
+        final maxWidth = max(curr.fullWidth, next.fullWidth);
+
+        for (var e in previouslyAdjusted) {
+          e.overridenX = minStart;
+          e.overridenWidth = maxWidth;
+        }
+      } else {
+        previouslyAdjusted.clear();
+      }
+    }
+
     final path = Path();
     final firstInfo = lineInfos.elementAt(0);
     final lastInfo = lineInfos.elementAt(lineInfos.length - 1);
@@ -614,21 +624,6 @@ class _HighlightPainter extends CustomPainter {
 
       final outerFactor = info.outerFactor(outerRadius);
       final innerFactor = info.innerFactor(innerRadius);
-
-      if (next != null) {
-        final difference = () {
-          final width = (info.width - next.width);
-          if (width.isNegative) return -width;
-          return width;
-        }()
-            .toInt();
-        final differenceBigger = difference > outerFactor + 1;
-        // print('$differenceBigger $difference/$outerFactor');
-        if (!differenceBigger) {
-          next.overridenX = info.x;
-          next.overridenWidth = info.fullWidth;
-        }
-      }
 
       void drawTopLeftCorner(LineMetricsHelper info) {
         final localOuterFactor = lastUsedInfo == info ? outerFactor : (lastUsedInfo.x - info.x).clamp(0, outerFactor);
