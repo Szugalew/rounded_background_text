@@ -298,14 +298,12 @@ class RoundedBackgroundText extends StatelessWidget {
           fontSize: style.fontSize ?? 16.0,
         ).merge(style),
       ),
-      textDirection:
-          textDirection ?? Directionality.maybeOf(context) ?? TextDirection.ltr,
+      textDirection: textDirection ?? Directionality.maybeOf(context) ?? TextDirection.ltr,
       textAlign: textAlign ?? defaultTextStyle.textAlign ?? TextAlign.start,
       backgroundColor: backgroundColor ?? Colors.transparent,
       textWidthBasis: textWidthBasis ?? defaultTextStyle.textWidthBasis,
       maxLines: maxLines ?? defaultTextStyle.maxLines,
-      textHeightBehavior:
-          textHeightBehavior ?? defaultTextStyle.textHeightBehavior,
+      textHeightBehavior: textHeightBehavior ?? defaultTextStyle.textHeightBehavior,
       ellipsis: ellipsis,
       locale: locale,
       strutStyle: strutStyle,
@@ -433,27 +431,95 @@ class __RoundedBackgroundTextState extends State<_RoundedBackgroundText> {
         generate();
       }
       return SizedBox(
-        width: requiredSize.width == 0 || requiredSize.width.isInfinite
-            ? maxWidth
-            : requiredSize.width,
-        child: CustomPaint(
-          isComplex: true,
-          willChange: true,
-          size: Size(
-            size.maxWidth,
-            size.maxHeight.isInfinite ? requiredSize.height : size.maxHeight,
-          ),
-          painter: _HighlightPainter(
-            lineInfos: lineInfos,
-            backgroundColor: widget.backgroundColor,
-            text: painter,
-            innerFactor: widget.innerFactor,
-            outerFactor: widget.outerFactor,
-          ),
+        width: requiredSize.width == 0 || requiredSize.width.isInfinite ? maxWidth : requiredSize.width,
+        child: Stack(
+          children: [
+            Stack(
+              children: lineInfos
+                  .map(
+                    (lineInfo) => ClipPath(
+                      clipper: CustomClipPath(
+                        lineInfos: lineInfo,
+                        innerFactor: widget.innerFactor,
+                        outerFactor: widget.outerFactor,
+                      ),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+                        child: SizedBox(
+                          height: double.infinity,
+                          width: double.infinity,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+            CustomPaint(
+              isComplex: true,
+              willChange: true,
+              size: Size(
+                size.maxWidth,
+                size.maxHeight.isInfinite ? requiredSize.height : size.maxHeight,
+              ),
+              painter: _HighlightPainter(
+                lineInfos: lineInfos,
+                backgroundColor: widget.backgroundColor.withOpacity(0.1),
+                text: painter,
+                innerFactor: widget.innerFactor,
+                outerFactor: widget.outerFactor,
+              ),
+            ),
+          ],
         ),
       );
     });
   }
+}
+
+class CustomClipPath extends CustomClipper<Path> {
+  final List<LineMetricsHelper> lineInfos;
+  final double innerFactor;
+  final double outerFactor;
+
+  const CustomClipPath({
+    required this.lineInfos,
+    this.innerFactor = kDefaultInnerFactor,
+    this.outerFactor = kDefaultOuterFactor,
+  });
+
+  @override
+  Path getClip(Size size) {
+    if (lineInfos.isEmpty) return Path();
+    if (lineInfos.length == 1) {
+      final info = lineInfos.first;
+      if (!info.isEmpty) {
+        return Path()
+          ..addRRect(
+            RRect.fromLTRBR(
+              info.x,
+              info.y,
+              info.fullWidth,
+              info.fullHeight,
+              Radius.circular(info.outerFactor(outerFactor)),
+            ),
+          );
+      }
+      return Path();
+    }
+
+    Path path = _HighlightPainter.generatePath(
+      lineInfos: lineInfos,
+      outerRadius: outerFactor,
+      innerRadius: innerFactor,
+    );
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipPath oldClipper) =>
+      oldClipper.outerFactor != outerFactor ||
+      oldClipper.innerFactor != innerFactor ||
+      oldClipper.lineInfos != lineInfos;
 }
 
 class _HighlightPainter extends CustomPainter {
@@ -500,11 +566,24 @@ class _HighlightPainter extends CustomPainter {
       return;
     }
 
+    final path = generatePath(
+      lineInfos: lineInfos,
+      outerRadius: outerFactor,
+      innerRadius: innerFactor,
+    );
+    canvas.drawPath(path, Paint()..color = backgroundColor);
+  }
+
+  static Path generatePath({
+    required List<LineMetricsHelper> lineInfos,
+    required double outerRadius,
+    required double innerRadius,
+  }) {
     final path = Path();
     final firstInfo = lineInfos.elementAt(0);
     final lastInfo = lineInfos.elementAt(lineInfos.length - 1);
 
-    path.moveTo(firstInfo.x + outerFactor, firstInfo.y);
+    path.moveTo(firstInfo.x + outerRadius, firstInfo.y);
 
     LineMetricsHelper lastUsedInfo = firstInfo;
     int currentIndex = -1;
@@ -522,8 +601,8 @@ class _HighlightPainter extends CustomPainter {
 
       final next = nextElement();
 
-      final outerFactor = info.outerFactor(this.outerFactor);
-      final innerFactor = info.innerFactor(this.innerFactor);
+      final outerFactor = info.outerFactor(outerRadius);
+      final innerFactor = info.innerFactor(innerRadius);
 
       if (next != null) {
         final difference = () {
@@ -541,9 +620,7 @@ class _HighlightPainter extends CustomPainter {
       }
 
       void drawTopLeftCorner(LineMetricsHelper info) {
-        final localOuterFactor = lastUsedInfo == info
-            ? outerFactor
-            : (lastUsedInfo.x - info.x).clamp(0, outerFactor);
+        final localOuterFactor = lastUsedInfo == info ? outerFactor : (lastUsedInfo.x - info.x).clamp(0, outerFactor);
         final controlPoint = Offset(
           info.x,
           info.y,
@@ -578,8 +655,7 @@ class _HighlightPainter extends CustomPainter {
 
       void drawInnerCorner(LineMetricsHelper info, [bool toLeft = true]) {
         if (toLeft) {
-          final formattedHeight =
-              info.fullHeight - info.innerLinePadding.bottom;
+          final formattedHeight = info.fullHeight - info.innerLinePadding.bottom;
 
           final localInnerFactor = (info.x - next!.x).clamp(0, innerFactor);
           path.lineTo(info.x, info.fullHeight - localInnerFactor);
@@ -667,8 +743,8 @@ class _HighlightPainter extends CustomPainter {
 
       final next = nextElement();
 
-      final outerFactor = info.outerFactor(this.outerFactor);
-      final innerFactor = info.innerFactor(this.innerFactor);
+      final outerFactor = info.outerFactor(outerRadius);
+      final innerFactor = info.innerFactor(innerRadius);
 
       void drawTopRightCorner(
         LineMetricsHelper info, [
@@ -713,8 +789,7 @@ class _HighlightPainter extends CustomPainter {
       void drawInnerCorner(LineMetricsHelper info, [bool toRight = true]) {
         // To left
         if (!toRight) {
-          final formattedHeight =
-              info.fullHeight - info.innerLinePadding.bottom;
+          final formattedHeight = info.fullHeight - info.innerLinePadding.bottom;
           path.lineTo(
             info.fullWidth + innerFactor,
             formattedHeight,
@@ -761,11 +836,9 @@ class _HighlightPainter extends CustomPainter {
       }
 
       if (next != null) {
-        final differenceBigger = info == lastUsedInfo ||
-            info.fullWidth - lastUsedInfo.fullWidth >= outerFactor;
+        final differenceBigger = info == lastUsedInfo || info.fullWidth - lastUsedInfo.fullWidth >= outerFactor;
         // If it's the first info or it's bigger than the last one
-        if ((info == lastInfo || info.fullWidth > lastUsedInfo.fullWidth) &&
-            differenceBigger) {
+        if ((info == lastInfo || info.fullWidth > lastUsedInfo.fullWidth) && differenceBigger) {
           drawBottomRightCorner(info);
         }
 
@@ -798,7 +871,7 @@ class _HighlightPainter extends CustomPainter {
     path
       ..lineTo(firstInfo.fullWidth / 2, firstInfo.y)
       ..close();
-    canvas.drawPath(path, Paint()..color = backgroundColor);
+    return path;
   }
 
   @override
@@ -806,8 +879,7 @@ class _HighlightPainter extends CustomPainter {
     // If we're debugging, update everytime
     if (kDebugMode) return true;
 
-    return oldDelegate.backgroundColor != backgroundColor ||
-        oldDelegate.lineInfos != lineInfos;
+    return oldDelegate.backgroundColor != backgroundColor || oldDelegate.lineInfos != lineInfos;
   }
 
   @override
@@ -944,10 +1016,7 @@ class LineMetricsHelper {
 
   @override
   int get hashCode {
-    return metrics.hashCode ^
-        length.hashCode ^
-        overridenWidth.hashCode ^
-        overridenX.hashCode;
+    return metrics.hashCode ^ length.hashCode ^ overridenWidth.hashCode ^ overridenX.hashCode;
   }
 
   @override
