@@ -666,10 +666,10 @@ class _HighlightPainter extends CustomPainter {
 
       void drawInnerCorner(LineMetricsHelper info, [bool toLeft = true]) {
         if (toLeft) {
-          final formattedHeight = info.fullHeight - info.innerLinePadding.bottom;
+          final formattedHeight = info.fullHeight - info.innerLinePadding.bottom - info.innerLinePadding.top;
 
           final localInnerFactor = (info.x - next!.x).clamp(0, innerFactor);
-          path.lineTo(info.x, info.fullHeight - localInnerFactor);
+          path.lineTo(info.x, formattedHeight - localInnerFactor);
           final iControlPoint = Offset(
             info.x,
             formattedHeight,
@@ -686,7 +686,7 @@ class _HighlightPainter extends CustomPainter {
             iEndPoint.dy,
           );
         } else {
-          final formattedY = next!.y + info.innerLinePadding.bottom;
+          final formattedY = next!.y + info.innerLinePadding.bottom + info.innerLinePadding.top;
 
           final localInnerFactor = (next.x - info.x).clamp(0, innerFactor);
           path.lineTo(next.x - localInnerFactor, formattedY);
@@ -800,7 +800,7 @@ class _HighlightPainter extends CustomPainter {
       void drawInnerCorner(LineMetricsHelper info, [bool toRight = true]) {
         // To left
         if (!toRight) {
-          final formattedHeight = info.fullHeight - info.innerLinePadding.bottom;
+          final formattedHeight = info.fullHeight - info.innerLinePadding.bottom - info.innerLinePadding.top;
           path.lineTo(
             info.fullWidth + innerFactor,
             formattedHeight,
@@ -822,7 +822,7 @@ class _HighlightPainter extends CustomPainter {
             endPoint.dy,
           );
         } else {
-          final formattedY = info.y + info.innerLinePadding.bottom;
+          final formattedY = info.y + info.innerLinePadding.bottom + info.innerLinePadding.top;
           path.lineTo(
             info.fullWidth,
             formattedY + innerFactor,
@@ -920,24 +920,15 @@ class LineMetricsHelper {
   /// Whether this line is the last line in the paragraph
   bool get isLast => metrics.lineNumber == length - 1;
 
-  late EdgeInsets firstLinePadding = EdgeInsets.only(
-    left: height * 0.3,
-    right: height * 0.3,
-    top: height * 0.3,
-    bottom: 0,
+  late EdgeInsets padding = EdgeInsets.only(
+    left: metrics.height * 0.5,
+    right: metrics.height * 0.5,
+    top: metrics.height * 0.2,
+    bottom: metrics.height * 0.2,
   );
-  late EdgeInsets innerLinePadding = EdgeInsets.only(
-    left: height * 0.3,
-    right: height * 0.3,
-    top: 0.0,
-    bottom: height * 0.15,
-  );
-  late EdgeInsets lastLinePadding = EdgeInsets.only(
-    left: height * 0.3,
-    right: height * 0.3,
-    top: 0.0,
-    bottom: height * 0.15,
-  );
+  late EdgeInsets firstLinePadding = padding;
+  late EdgeInsets innerLinePadding = padding;
+  late EdgeInsets lastLinePadding = padding;
 
   /// Dynamically calculate the outer factor based on the provided [outerFactor]
   double outerFactor(double outerFactor) {
@@ -965,9 +956,9 @@ class LineMetricsHelper {
   double get y {
     final result = metrics.lineNumber * metrics.height;
     if (metrics.lineNumber == 0) {
-      // return result - firstLinePadding.top;
+      return result - firstLinePadding.top;
     } else if (isLast) {
-      return result + (lastLinePadding.top / 2);
+      return result - (lastLinePadding.top);
     } else {
       return result - (innerLinePadding.top);
     }
@@ -993,14 +984,26 @@ class LineMetricsHelper {
   double get fullHeight {
     final result = y + height;
 
-    if (isLast) {
+    if (metrics.lineNumber == 0) {
+      return result + (firstLinePadding.bottom);
+    } else if (isLast) {
       return result + (lastLinePadding.bottom);
     } else {
       return result + (innerLinePadding.bottom);
     }
   }
 
-  double get height => metrics.height;
+  double get height {
+    final result = metrics.height;
+
+    if (metrics.lineNumber == 0) {
+      return result + (firstLinePadding.bottom);
+    } else if (isLast) {
+      return result + (lastLinePadding.bottom);
+    } else {
+      return result + (innerLinePadding.bottom);
+    }
+  }
 
   double get width {
     final result = metrics.width;
