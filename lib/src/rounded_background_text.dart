@@ -445,9 +445,20 @@ class __RoundedBackgroundTextState extends State<_RoundedBackgroundText> {
                       ),
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-                        child: SizedBox(
-                          height: double.infinity,
-                          width: double.infinity,
+                        child: CustomPaint(
+                          isComplex: true,
+                          willChange: true,
+                          size: Size(
+                            size.maxWidth,
+                            requiredSize.height,
+                          ),
+                          painter: _HighlightPainter(
+                            lineInfos: lineInfos,
+                            backgroundColor: widget.backgroundColor.withOpacity(0.1),
+                            text: painter,
+                            innerFactor: widget.innerFactor,
+                            outerFactor: widget.outerFactor,
+                          ),
                         ),
                       ),
                     ),
@@ -459,7 +470,7 @@ class __RoundedBackgroundTextState extends State<_RoundedBackgroundText> {
               willChange: true,
               size: Size(
                 size.maxWidth,
-                size.maxHeight.isInfinite ? requiredSize.height : size.maxHeight,
+                requiredSize.height,
               ),
               painter: _HighlightPainter(
                 lineInfos: lineInfos,

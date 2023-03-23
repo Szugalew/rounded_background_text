@@ -138,6 +138,7 @@ class _MyAppState extends State<MyApp> {
             ),
             Expanded(
               child: Stack(
+                alignment: Alignment.center,
                 children: [
                   Container(
                     width: double.infinity,
