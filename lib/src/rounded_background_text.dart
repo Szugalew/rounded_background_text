@@ -10,6 +10,9 @@ const Color kDefaultRoundedTextBackgroundColor = Colors.blue;
 const double kDefaultInnerFactor = 8.0;
 const double kDefaultOuterFactor = 10.0;
 
+const double kDefaultBlurX = 0.0;
+const double kDefaultBlurY = 0.0;
+
 /// Gets the foreground color based on [backgroundColor]
 Color? foregroundColor(Color? backgroundColor) {
   return backgroundColor == null || backgroundColor.alpha == 0
@@ -73,6 +76,8 @@ class RoundedBackgroundText extends StatelessWidget {
     this.textHeightBehavior,
     this.innerRadius = kDefaultInnerFactor,
     this.outerRadius = kDefaultOuterFactor,
+    this.blurX = kDefaultBlurX,
+    this.blurY = kDefaultBlurY,
   })  : text = TextSpan(text: text, style: style),
         super(key: key);
 
@@ -93,6 +98,8 @@ class RoundedBackgroundText extends StatelessWidget {
     this.textHeightBehavior,
     this.innerRadius = kDefaultInnerFactor,
     this.outerRadius = kDefaultOuterFactor,
+    this.blurX = kDefaultBlurX,
+    this.blurY = kDefaultBlurY,
   })  : assert(innerRadius >= 0.0 && innerRadius <= 20.0),
         assert(outerRadius >= 0.0 && outerRadius <= 20.0),
         super(key: key);
@@ -286,6 +293,12 @@ class RoundedBackgroundText extends StatelessWidget {
   /// {@end-template}
   final double outerRadius;
 
+  /// The amount of blur to apply to the background (x direction)
+  final double blurX;
+
+  /// The amount of blur to apply to the background (y direction)
+  final double blurY;
+
   @override
   Widget build(BuildContext context) {
     final defaultTextStyle = DefaultTextStyle.of(context);
@@ -311,6 +324,8 @@ class RoundedBackgroundText extends StatelessWidget {
       textScaleFactor: textScaleFactor,
       innerFactor: innerRadius,
       outerFactor: outerRadius,
+      blurX: blurX,
+      blurY: blurY,
     );
   }
 }
@@ -355,6 +370,8 @@ class _RoundedBackgroundText extends StatefulWidget {
     this.ellipsis,
     this.innerFactor = kDefaultInnerFactor,
     this.outerFactor = kDefaultOuterFactor,
+    this.blurX = kDefaultBlurX,
+    this.blurY = kDefaultBlurY,
   }) : super(key: key);
 
   final InlineSpan text;
@@ -372,6 +389,9 @@ class _RoundedBackgroundText extends StatefulWidget {
 
   final double innerFactor;
   final double outerFactor;
+
+  final double blurX;
+  final double blurY;
 
   @override
   __RoundedBackgroundTextState createState() => __RoundedBackgroundTextState();
@@ -445,7 +465,7 @@ class __RoundedBackgroundTextState extends State<_RoundedBackgroundText> {
                         outerFactor: widget.outerFactor,
                       ),
                       child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+                        filter: ImageFilter.blur(sigmaX: widget.blurX, sigmaY: widget.blurY),
                         child: CustomPaint(
                           isComplex: true,
                           willChange: true,
@@ -455,7 +475,7 @@ class __RoundedBackgroundTextState extends State<_RoundedBackgroundText> {
                           ),
                           painter: _HighlightPainter(
                             lineInfos: lineInfos,
-                            backgroundColor: widget.backgroundColor.withOpacity(0.1),
+                            backgroundColor: widget.backgroundColor,
                             text: painter,
                             innerFactor: widget.innerFactor,
                             outerFactor: widget.outerFactor,

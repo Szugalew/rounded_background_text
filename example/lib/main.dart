@@ -159,7 +159,7 @@ class _MyAppState extends State<MyApp> {
                           case _HighlightTextType.field:
                             return RoundedBackgroundTextField(
                               controller: controller,
-                              backgroundColor: selectedColor,
+                              backgroundColor: selectedColor.withOpacity(0.2),
                               textAlign: textAlign,
                               hint: 'Type your text here',
                               style: TextStyle(
@@ -169,6 +169,8 @@ class _MyAppState extends State<MyApp> {
                               ),
                               innerRadius: innerRadius,
                               outerRadius: outerRadius,
+                              blurX: 10.0,
+                              blurY: 10.0,
                             );
                           case _HighlightTextType.text:
                             return RoundedBackgroundText(
@@ -189,7 +191,7 @@ shorter lines
 love 
   U
 ''',
-                              backgroundColor: selectedColor,
+                              backgroundColor: selectedColor.withOpacity(0.2),
                               textAlign: textAlign,
                               style: TextStyle(
                                 fontSize: fontSize,
@@ -198,6 +200,8 @@ love
                               ),
                               innerRadius: innerRadius,
                               outerRadius: outerRadius,
+                              blurX: 50.0,
+                              blurY: 50.0,
                             );
                           case _HighlightTextType.selectableText:
                             return RoundedBackgroundText.selectable(
@@ -207,7 +211,7 @@ It handles well all font sizes and weights, as well as text alignments
 
 Contributions are welcome!
 Done with so much <3 by @bdlukaa''',
-                              backgroundColor: selectedColor,
+                              backgroundColor: selectedColor.withOpacity(0.2),
                               textAlign: textAlign,
                               style: TextStyle(
                                 fontSize: fontSize,

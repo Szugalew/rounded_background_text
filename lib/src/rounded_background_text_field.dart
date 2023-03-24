@@ -54,6 +54,8 @@ class RoundedBackgroundTextField extends StatefulWidget {
     this.scrollPhysics,
     this.scrollBehavior,
     this.scrollPadding = EdgeInsets.zero,
+    this.blurX = kDefaultBlurX,
+    this.blurY = kDefaultBlurY,
   }) : super(key: key);
 
   final TextEditingController? controller;
@@ -280,6 +282,9 @@ class RoundedBackgroundTextField extends StatefulWidget {
   /// {@macro flutter.widgets.editableText.scrollPadding}
   final EdgeInsets scrollPadding;
 
+  final double blurX;
+  final double blurY;
+
   @override
   State<RoundedBackgroundTextField> createState() => _RoundedBackgroundTextFieldState();
 }
@@ -439,6 +444,8 @@ class _RoundedBackgroundTextFieldState extends State<RoundedBackgroundTextField>
                 outerRadius: widget.outerRadius,
                 textDirection: widget.textDirection,
                 textScaleFactor: widget.textScaleFactor ?? 1.0,
+                blurX: widget.blurX,
+                blurY: widget.blurY,
               ),
             ),
           )
